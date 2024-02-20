@@ -51,21 +51,21 @@ int main(int argc, char*argv[]){
     int simul = 10, timelimit = 2;
     int intervalInMs = 1000;
     int option;
-    while ((option = getopt(argc, argv,"h:n:s:t:i:")) != -1) {
+    while ((option = getopt(argc, argv, "hn:s:t:i:")) != -1) {
         switch (option) { 
             case 'h' : // print help
-				printf("Usage: ./oss [-h] [-s simul] [-t timelimit] [-i intervalInMs]\n"
+				printf("Usage: ./oss [-h] [-n [proc]] [-s simul] [-t timelimit] [-i intervalInMs]\n"
 					   "\t-h\t\tHelp: show this usage message\n"
 					   "\t-n proc\tTotal number of children to launch [Default: 5]\n"
-					   "\t-s simul\tNumber of processes to be spawned [Default: 10]\n"
+					   "\t-s simul\tNumber of children that can run simultaneously\n"
 					   "\t-t timelimit\tMaximum time a child process will run [Default: 2]\n"
 					   "\t-i intervalInMs\tInterval for launching children processes in milliseconds [Default: 1000]\n");
 				exit(EXIT_SUCCESS);
                 break;
-			case 'n' : // number of child processes to launch
+			case 'n' : // number of total children to launch
                 proc = atoi(optarg);
                 break;
-            case 's' :    // number of processes to spawn
+            case 's' :    // how many children to allow to run simultaneously
                 simul = atoi(optarg);
                 break;
             case 't' :    // max time child processes will run
@@ -93,12 +93,13 @@ int main(int argc, char*argv[]){
     srand(time(NULL)); // for generating random numbers
     int i, status, nextLaunchMs = 0;
 	int totalProc = 0;
-	int timeCounter = 0
+	int timeCounter = 0;
+	int runningProc = 0;
     pid_t pid;
     
-    while(totalProc < proc) {
-        if(clock->seconds * 1000 + clock->nanoseconds / 1000000 >= nextLaunchMs) {
-            pid = fork();
+	while(totalProc < proc) {
+		if(runningProc < simul && clock->seconds * 1000 + clock->nanoseconds / 1000000 >= nextLaunchMs) {
+			pid = fork();
             if(pid < 0){
                 perror("Fork failed");
             }
@@ -125,6 +126,7 @@ int main(int argc, char*argv[]){
 				totalProc++;
                 nextLaunchMs = clock->seconds * 1000 + clock->nanoseconds / 1000000 + intervalInMs;
             }
+			runningProc++;
         } 
 		usleep(1000); // simulate 1 ms pass in system clock
 		clock->nanoseconds += 1000000;
@@ -138,18 +140,18 @@ int main(int argc, char*argv[]){
 		// Handle child process termination
 		pid_t pid = waitpid(-1, &status, WNOHANG);
 		if(pid > 0){
-			// Check if child process exited normally
 			if(WIFEXITED(status)){
 				for(int j = 0; j < MAX_PROC; ++j){
 					if(processTable[j].pid == pid){
-						processTable[j].isFree = true; // child process terminated, update the process table
+						processTable[j].isFree = true;
+						runningProc--; // decrease running processes count as a child has terminated
 						break;
 					}
 				}
 			}
 		}
 
-		// Print process table every simulated 0.5 seconds.
+		// Print process table every 0.5 seconds.
 		if(timeCounter >= 500){
 			printf("OSS PID:%d SysClockS: %d SysclockNano: %d\n", getpid(), clock->seconds, clock->nanoseconds);
 			printf("Process Table:\n");
