@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #define MAX_PROC 10
 
@@ -23,13 +24,34 @@ struct PCB {
 
 struct PCB processTable[MAX_PROC];
 
+void handle_alarm(int sig){
+    for(int i = 0; i < MAX_PROC; ++i){
+        if(!processTable[i].isFree){
+            kill(processTable[i].pid, SIGKILL); //kill each child 
+            processTable[i].isFree = true; 
+        }
+    }
+    printf("Terminated after 60 seconds.");
+    exit(0);
+}
+
 int main(int argc, char*argv[]){
+	
+	//Initialize processTable
+    for(int i = 0; i < MAX_PROC; ++i)
+        processTable[i].isFree = true;
+
+    //setup alarm signal handler
+    signal(SIGALRM, handle_alarm);
+    //schedule alarm for 60 seconds
+    alarm(60);
     
     // variables for command line parameters
+	int proc = 5;
     int simul = 10, timelimit = 2;
     int intervalInMs = 1000;
     int option;
-    while ((option = getopt(argc, argv,"hs:t:i:n:")) != -1) {
+    while ((option = getopt(argc, argv,"h:n:s:t:i:")) != -1) {
         switch (option) { 
             case 'h' : // print help
 				printf("Usage: ./oss [-h] [-s simul] [-t timelimit] [-i intervalInMs]\n"
@@ -38,6 +60,9 @@ int main(int argc, char*argv[]){
 					   "\t-t timelimit\tMaximum time a child process will run [Default: 2]\n"
 					   "\t-i intervalInMs\tInterval for launching children processes in milliseconds [Default: 1000]\n");
 				exit(EXIT_SUCCESS);
+                break;
+			case 'n' : // number of child processes to launch
+                proc = atoi(optarg);
                 break;
             case 's' :    // number of processes to spawn
                 simul = atoi(optarg);
@@ -66,9 +91,10 @@ int main(int argc, char*argv[]){
     
     srand(time(NULL)); // for generating random numbers
     int i, status, nextLaunchMs = 0;
+	int totalProc = 0;
     pid_t pid;
     
-    for(i = 0; i < simul; ++i) {
+    while(totalProc < proc) {
         if(clock->seconds * 1000 + clock->nanoseconds / 1000000 >= nextLaunchMs) {
             pid = fork();
             if(pid < 0){
@@ -94,6 +120,7 @@ int main(int argc, char*argv[]){
                         break;
                     }
                 }
+				totalProc++;
                 nextLaunchMs = clock->seconds * 1000 + clock->nanoseconds / 1000000 + intervalInMs;
             }
         } 
