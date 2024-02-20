@@ -22,43 +22,33 @@ int main(int argc, char* argv[]) {
     }
 
     clock = (struct systemClock*) shmat(shmid, NULL, 0);
-    if (clock == (void *) -1) {
-        perror("shmat failed in worker");
-        exit(EXIT_FAILURE);
-    }
 
-    if (argc < 3) {
-        printf("Not enough arguments\n");
-        return 1;
-    }
-
-    int targetSecs = atoi(argv[1]);
+    int targetSeconds = atoi(argv[1]);
     int targetNanos = atoi(argv[2]);
     int systemSecs = clock->seconds;
     int systemNanos = clock->nanoseconds;
     int secsPassed = 0;
-    targetSecs += systemSecs;
+
+    targetSeconds += systemSecs;
     targetNanos += systemNanos;
 
-    if (targetNanos >= 1000000000) {
-        targetSecs += 1;
-        targetNanos -= 1000000000;
-    }
+    printf("WORKER PID:%d PPID:%d SysClockS: %d SysclockNano: %d TargetTermS: %d TargetTermNano: %d\n--Just Starting\n", 
+        getpid(), getppid(), systemSecs, systemNanos, targetSeconds, targetNanos);
 
-    while(1) {
-        if(clock->seconds >= targetSecs && clock->nanoseconds >= targetNanos) {
-            printf("WORKER PID:%d PPID:%d SysClockS: %d SysclockNano: %d TermTimeS: %d TermTimeNano: %d\n--Terminating\n",
-                   getpid(), getppid(), clock->seconds, clock->nanoseconds, targetSecs, targetNanos);
-            break;
-        }
-
+    while(1) {       
         if(clock->seconds > systemSecs) {
-            printf("WORKER PID:%d PPID:%d SysClockS: %d SysclockNano: %d TermTimeS: %d TermTimeNano: %d\n--%d seconds have passed since starting\n",
-                   getpid(), getppid(), clock->seconds, clock->nanoseconds, targetSecs, targetNanos, ++secsPassed);
+            printf("WORKER PID:%d PPID:%d SysClockS: %d SysclockNano: %d TargetTermS: %d TargetTermNano: %d\n--%d seconds have passed since starting\n", 
+                getpid(), getppid(), clock->seconds, clock->nanoseconds, targetSeconds, targetNanos, ++secsPassed);
             systemSecs = clock->seconds;
         }
+
+        if(clock->seconds >= targetSeconds && clock->nanoseconds >= targetNanos) {
+            printf("WORKER PID:%d PPID:%d SysClockS: %d SysclockNano: %d TargetTermS: %d TargetTermNano: %d\n--Terminating\n",
+                getpid(), getppid(), clock->seconds, clock->nanoseconds, targetSeconds, targetNanos);
+            break;
+        }
     }
+
     shmdt(clock);
-    
     return 0;
 }
