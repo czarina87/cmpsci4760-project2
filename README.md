@@ -18,7 +18,6 @@ bash
 ./oss -n 5 -s 2 -t 5 -i 1000
 
 
-By default, the program uses predefined values for various parameters"
 number of children to run simultaneously(`-s`)
 number of child processes to launch (`-n`)
 maximum time a child process will run (`-t`)
