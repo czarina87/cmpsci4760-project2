@@ -1,19 +1,20 @@
-# OSS & Worker Programs
+ OSS & Worker Program - 
 
-This project contains two C-based programs: `oss` (Operating System Simulator) and `worker`. The `oss` program forks multiple `worker` processes that run concurrently, simulating how an operating system schedules processes. The `worker` processes report back to `oss` once they finish execution.
+This project contains two C programs: oss (Operating System Simulator) and worker. The `oss program forks multiple `worker` processes that run concurrently,
+ simulating how an operating system schedules it's processes. The `worker` processes report back to `oss` once they finish execution.
 
-## Compilation
+Compilation - 
 
 Use the make to compile the programs. 
-Navigate to the directory containing the source code, then compile the programs by running 'make'
+Navigate to the directory containing the source code, then compile the programs by running 'make'.
 
-## Running the Program
+ Running the Program - 
 
-After compilation, run the program by using the following command:
+After compiling, you run the program by using the following command - example:
+
 bash
-./oss
+./oss -n 5 -s 2 -t 5 -i 1000
 
-This will start the `oss` program, which will subsequently spawn `worker` processes according to its scheduling logic.
 
 By default, the program uses predefined values for various parameters"
 number of children to run simultaneously(`-s`)
@@ -23,3 +24,4 @@ and interval for launching child processes (`-i`).
 
 
 (`-h`) This will display more detailed usage instructions.
+

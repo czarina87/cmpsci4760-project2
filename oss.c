@@ -100,43 +100,43 @@ int main(int argc, char*argv[]){
 	while(totalProc < proc) {
 		if(runningProc < simul && clock->seconds * 1000 + clock->nanoseconds / 1000000 >= nextLaunchMs) {
 			pid = fork();
-            if(pid < 0){
-                perror("Fork failed");
-            }
-            if(pid == 0){
-                char secStr[10], nsecStr[10];
-                int sec = rand() % timelimit + 1;
-                int nsec = rand() % 1000000000;
-                sprintf(secStr, "%d", sec);
-                sprintf(nsecStr, "%d", nsec);
-                char shmidStr[10];
+			if(pid < 0){
+				perror("Fork failed");
+			}
+			if(pid == 0){
+				char secStr[10], nsecStr[10];
+				int sec = rand() % timelimit + 1;
+				int nsec = rand() % 1000000000;
+				sprintf(secStr, "%d", sec);
+				sprintf(nsecStr, "%d", nsec);
+				char shmidStr[10];
 				sprintf(shmidStr, "%d", shmid);
 				char* args[] = {"./worker", secStr, nsecStr, shmidStr, NULL};
-                execv("./worker", args);
-            } else {
-                // find and update next free slot in processTable
-                for(int j = 0; j < MAX_PROC; ++j){
-                    if(processTable[j].isFree){
-                        processTable[j].pid = pid;
-                        processTable[j].launchTime = *clock;
-                        processTable[j].isFree = false;
-                        break;
-                    }
-                }
+				execv("./worker", args);
+			} else {
+				// find and update next free slot in processTable
+				for(int j = 0; j < MAX_PROC; ++j){
+					if(processTable[j].isFree){
+						processTable[j].pid = pid;
+						processTable[j].launchTime = *clock; // note the time just before the child is launched
+						processTable[j].isFree = false;
+						break;
+					}
+				}
 				totalProc++;
-                nextLaunchMs = clock->seconds * 1000 + clock->nanoseconds / 1000000 + intervalInMs;
-            }
+				nextLaunchMs = clock->seconds * 1000 + clock->nanoseconds / 1000000 + intervalInMs;
+			}
 			runningProc++;
-        } 
-		usleep(1000); // simulate 1 ms pass in system clock
+		}
+		// make clock increment happen after child process is created
+		usleep(1000); //simulate 1 ms pass in system clock
 		clock->nanoseconds += 1000000;
-		timeCounter += 1000;
+		timeCounter += 1000; // move this line here
 
 		if(clock->nanoseconds >= 1000000000){
 			clock->seconds += 1;
 			clock->nanoseconds -= 1000000000;
 		}
-
 		// Handle child process termination
 		pid_t pid = waitpid(-1, &status, WNOHANG);
 		if(pid > 0){
