@@ -1,4 +1,6 @@
- OSS & Worker Program - 
+https://github.com/czarina87/cmpsci4760-project2
+ 
+OSS & Worker Program - 
 
 This project contains two C programs: oss (Operating System Simulator) and worker. The `oss program forks multiple `worker` processes that run concurrently,
  simulating how an operating system schedules it's processes. The `worker` processes report back to `oss` once they finish execution.
